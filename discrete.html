@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance - Discrete Mathematics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-8">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-700">Attendance - Discrete Mathematics</h1>
+    <a href="lecture.html" 
+       class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700">
+      Back to Today's Lectures
+    </a>
+  </div>
+
+  <!-- Attendance Table -->
+  <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <table class="min-w-full text-sm text-gray-700">
+      <thead class="bg-indigo-600 text-white">
+        <tr>
+          <th class="px-6 py-3 text-left">Lecture No.</th>
+          <th class="px-6 py-3 text-left">Student Name</th>
+          <th class="px-6 py-3 text-left">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b">
+          <td class="px-6 py-3">1</td>
+          <td class="px-6 py-3">Amit Sharma</td>
+          <td class="px-6 py-3 text-green-600 font-semibold">Present</td>
+        </tr>
+        <tr class="border-b">
+          <td class="px-6 py-3">1</td>
+          <td class="px-6 py-3">Riya Verma</td>
+          <td class="px-6 py-3 text-red-600 font-semibold">Absent</td>
+        </tr>
+        <tr class="border-b">
+          <td class="px-6 py-3">1</td>
+          <td class="px-6 py-3">Arjun Patel</td>
+          <td class="px-6 py-3 text-yellow-600 font-semibold">Leave</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

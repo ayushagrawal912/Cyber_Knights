@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>School Login</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-green-100 flex items-center justify-center min-h-screen">
+
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 text-center">
+    
+    <!-- ✅ School Logo -->
+    <img src="./mediaelement/WhatsApp Image 2025-08-30 at 12.13.08_0dc3fa1d-modified.png" alt="School Logo" class="w-24 h-24 mx-auto mb-6">
+
+    <!-- ✅ Title -->
+    <h1 class="text-2xl font-bold text-gray-700 mb-6">Faculty Login</h1>
+
+    <!-- ✅ Login Form -->
+    <form id="loginForm" class="space-y-4">
+      <input 
+        type="text" 
+        placeholder="Username" 
+        id="username"
+        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+        required
+      />
+      <input 
+        type="password" 
+        placeholder="Password" 
+        id="password"
+        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+        required
+      />
+      <button 
+      target="_blank"
+        type="submit"
+        class="w-full py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-gray-700 transition"
+      >
+        Login
+      </button>
+    </form>
+
+    <!-- ✅ Extra Links -->
+    <div class="mt-4 text-sm text-gray-500">
+      <a href="#" class="hover:underline">Forgot Password?</a>
+    </div>
+  </div>
+
+  <!-- ✅ Script for simple redirection -->
+  <script>
+    const form = document.getElementById("loginForm");
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      // Demo credentials (you can change)
+      if(username === "Akash" && password === "12345"){
+        window.location.href = "index.html"; // redirect to your main page
+      } else {
+        alert("Invalid username or password!");
+      }
+    });
+  </script>
+</body>
+</html>

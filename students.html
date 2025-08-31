@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Students Attendance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    #video-container {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+    #video {
+      width: 100%;
+      border-radius: 0.5rem;
+    }
+    #canvas {
+      display: none;
+    }
+    .flash {
+      animation: flash 0.5s;
+    }
+    @keyframes flash {
+      0% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    .student-card {
+      transition: all 0.3s ease;
+    }
+    .student-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .present {
+      background-color: #d1fae5;
+      border-left: 4px solid #10b981;
+    }
+    .absent {
+      background-color: #fee2e2;
+      border-left: 4px solid #ef4444;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-8">
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold text-gray-700">My Students Attendance</h1>
+      <button onclick="window.location.href='index.html'" 
+          class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700">
+        ⬅ Back to Dashboard
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6">
+      <!-- Add New Student Form -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-xl font-bold text-gray-700 mb-4">Add New Student</h2>
+        <form id="add-student-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
+            <input type="text" id="student-name" required
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-400">
+          </div>
+          <div class="md:col-span-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
+            <input type="text" id="roll-number" required
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-400">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Face Image</label>
+            <div class="flex flex-col md:flex-row gap-4">
+              <div class="flex-1">
+                <button type="button" id="capture-btn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
+                  Capture from Camera
+                </button>
+              </div>
+              <div class="flex-1">
+                <label for="face-image" class="w-full px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700 flex items-center justify-center cursor-pointer">
+                  Upload Image
+                </label>
+                <input type="file" id="face-image" accept="image/*" class="hidden">
+              </div>
+            </div>
+            <div id="video-container" class="mt-4 hidden">
+              <video id="video" autoplay></video>
+              <canvas id="canvas"></canvas>
+              <button type="button" id="take-photo" class="mt-2 w-full px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700">
+                Take Photo
+              </button>
+            </div>
+            <div id="preview-container" class="mt-4 hidden">
+              <img id="preview" class="w-full max-w-[320px] rounded-lg">
+              <button type="button" id="retake-photo" class="mt-2 px-4 py-2 bg-yellow-600 text-white rounded-lg shadow hover:bg-yellow-700">
+                Retake Photo
+              </button>
+            </div>
+          </div>
+          <div class="md:col-span-2">
+            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700">
+              Add Student
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Student List with Attendance Marking -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold text-gray-700">Student Attendance</h2>
+          <div class="flex gap-2">
+            <button id="mark-all-present" class="px-3 py-1.5 bg-green-600 text-white rounded-lg shadow hover:bg-green-700">
+              Mark All Present
+            </button>
+            <button id="take-attendance-photo" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
+              Take Attendance Photo
+            </button>
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <input type="text" id="search-input" placeholder="Search by name or roll number" 
+                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-400">
+        </div>
+        
+        <div id="student-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
+          <div class="text-center py-8 text-gray-500 col-span-full">
+            Loading students...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const studentList = document.getElementById('student-list');
+    const searchInput = document.getElementById('search-input');
+    const studentSearchInput = document.getElementById('student-search-input');
+    const studentsTableBody = document.getElementById('students-table-body');
+    const refreshStudentsBtn = document.getElementById('refresh-students');
+    const markAllPresentBtn = document.getElementById('mark-all-present');
+    const takeAttendancePhotoBtn = document.getElementById('take-attendance-photo');
+    const addStudentForm = document.getElementById('add-student-form');
+    const studentNameInput = document.getElementById('student-name');
+    const rollNumberInput = document.getElementById('roll-number');
+    const captureBtn = document.getElementById('capture-btn');
+    const faceImageInput = document.getElementById('face-image');
+    const videoContainer = document.getElementById('video-container');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const takePhotoBtn = document.getElementById('take-photo');
+    const previewContainer = document.getElementById('preview-container');
+    const preview = document.getElementById('preview');
+    const retakePhotoBtn = document.getElementById('retake-photo');
+    
+    // Global variables
+    let students = [];
+    let attendanceData = {};
+    const today = new Date().toISOString().split('T')[0];
+    let stream = null;
+    let capturedImage = null;
+    
+    // Fetch students on page load
+    fetchStudents();
+    
+    // Add event listeners for student form and student list
+    addStudentForm.addEventListener('submit', handleAddStudent);
+    captureBtn.addEventListener('click', startCamera);
+    takePhotoBtn.addEventListener('click', capturePhoto);
+    retakePhotoBtn.addEventListener('click', retakePhoto);
+    faceImageInput.addEventListener('change', handleFileUpload);
+    refreshStudentsBtn.addEventListener('click', fetchStudents);
+    studentSearchInput.addEventListener('input', filterStudentsTable);
+    
+    // Fetch students from API
+    async function fetchStudents() {
+      try {
+        const response = await fetch('/api/students');
+        const data = await response.json();
+        
+        if (data.students) {
+          students = data.students;
+          // Initialize attendance data
+          students.forEach(student => {
+            if (!attendanceData[student.id]) {
+              attendanceData[student.id] = {
+                status: 'absent', // Default to absent
+                timestamp: new Date().toISOString()
+              };
+            }
+          });
+          renderStudents(students);
+          renderStudentsTable(students);
+        } else {
+          studentList.innerHTML = `<div class="text-center py-8 text-red-500 col-span-full">Failed to load students</div>`;
+          studentsTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">Failed to load students</td></tr>`;
+        }
+      } catch (err) {
+        console.error('Error fetching students:', err);
+        studentList.innerHTML = `<div class="text-center py-8 text-red-500 col-span-full">Error loading students</div>`;
+        studentsTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">Error loading students</td></tr>`;
+      }
+    }
+    
+    // Render students table with all details
+    function renderStudentsTable(studentsData) {
+      if (studentsData.length === 0) {
+        studentsTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">No students found</td></tr>`;
+        return;
+      }
+      
+      studentsTableBody.innerHTML = studentsData.map(student => `
+        <tr class="hover:bg-gray-50">
+          <td class="py-3 px-4 whitespace-nowrap">${student.id}</td>
+          <td class="py-3 px-4 whitespace-nowrap">${student.name}</td>
+          <td class="py-3 px-4 whitespace-nowrap">${student.roll_number}</td>
+          <td class="py-3 px-4 whitespace-nowrap">
+            ${student.has_face_encoding ? 
+              '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Yes</span>' : 
+              '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">No</span>'}
+          </td>
+          <td class="py-3 px-4 whitespace-nowrap">
+            <button 
+              onclick="updateStudentFace(${student.id})" 
+              class="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+              Update Face
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    // Filter students table based on search input
+    function filterStudentsTable() {
+      const searchTerm = studentSearchInput.value.toLowerCase();
+      const filteredStudents = students.filter(student => 
+        student.name.toLowerCase().includes(searchTerm) || 
+        student.roll_number.toLowerCase().includes(searchTerm)
+      );
+      renderStudentsTable(filteredStudents);
+    }
+    
+    // Update student face
+    function updateStudentFace(studentId) {
+      // Show a modal or redirect to a page to update the student's face
+      alert(`Update face for student ID: ${studentId}`);
+      // This is a placeholder. You can implement the actual update functionality here.
+    }
+    
+    // Render students list with attendance status
+    function renderStudents(studentsToRender) {
+      if (studentsToRender.length === 0) {
+        studentList.innerHTML = `<div class="text-center py-8 text-gray-500 col-span-full">No students found</div>`;
+        return;
+      }
+      
+      studentList.innerHTML = studentsToRender.map(student => {
+        const isPresent = attendanceData[student.id]?.status === 'present';
+        return `
+          <div class="student-card ${isPresent ? 'present' : 'absent'} rounded-lg p-4 flex flex-col">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <div class="font-medium text-lg">${student.name}</div>
+                <div class="text-sm text-gray-500">${student.roll_number}</div>
+              </div>
+              <div class="flex items-center">
+                <span class="px-2 py-1 ${isPresent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs rounded-full">
+                  ${isPresent ? 'Present' : 'Absent'}
+                </span>
+              </div>
+            </div>
+            
+            <div class="mt-auto pt-2 flex justify-between items-center">
+              <div class="text-xs text-gray-500">
+                ${isPresent ? `Marked at: ${new Date(attendanceData[student.id].timestamp).toLocaleTimeString()}` : ''}
+              </div>
+              <button class="toggle-attendance-btn px-3 py-1.5 ${isPresent ? 'bg-red-600' : 'bg-green-600'} text-white text-sm rounded-lg" 
+                      data-id="${student.id}" data-name="${student.name}">
+                Mark ${isPresent ? 'Absent' : 'Present'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      // Add event listeners to toggle attendance buttons
+      document.querySelectorAll('.toggle-attendance-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          toggleAttendance(btn.dataset.id, btn.dataset.name);
+        });
+      });
+    }
+    
+    // Toggle attendance status for a student
+    function toggleAttendance(studentId, studentName) {
+      const currentStatus = attendanceData[studentId]?.status || 'absent';
+      const newStatus = currentStatus === 'present' ? 'absent' : 'present';
+      
+      attendanceData[studentId] = {
+        status: newStatus,
+        timestamp: new Date().toISOString()
+      };
+      
+      // If marking present, record attendance in the database
+      if (newStatus === 'present') {
+        recordAttendance(studentId);
+      }
+      
+      renderStudents(students);
+    }
+    
+    // Record attendance in the database
+     async function recordAttendance(studentId) {
+       try {
+         const response = await fetch('/api/attendance/manual', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json'
+           },
+           body: JSON.stringify({
+             student_id: studentId,
+             lecture_id: 1, // Using default lecture ID
+             date: today,
+             status: 'present'
+           })
+         });
+         
+         const data = await response.json();
+         
+         if (!data.success) {
+           console.error('Failed to record attendance:', data.message);
+         }
+       } catch (err) {
+         console.error('Error recording attendance:', err);
+       }
+     }
+    
+    // Mark all students as present
+    markAllPresentBtn.addEventListener('click', () => {
+      students.forEach(student => {
+        attendanceData[student.id] = {
+          status: 'present',
+          timestamp: new Date().toISOString()
+        };
+        recordAttendance(student.id);
+      });
+      
+      renderStudents(students);
+    });
+    
+    // Take attendance photo
+    takeAttendancePhotoBtn.addEventListener('click', () => {
+      window.location.href = 'camera.html';
+    });
+    
+    // Search functionality
+    searchInput.addEventListener('input', () => {
+      const searchTerm = searchInput.value.toLowerCase();
+      
+      const filteredStudents = students.filter(student => 
+        student.name.toLowerCase().includes(searchTerm) || 
+        student.roll_number.toLowerCase().includes(searchTerm)
+      );
+      
+      renderStudents(filteredStudents);
+    });
+  </script>
+</body>
+</html>

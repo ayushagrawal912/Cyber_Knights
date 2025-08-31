@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration with Face Recognition</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-row {
+            display: flex;
+            margin-bottom: 15px;
+            gap: 20px;
+        }
+        .form-group {
+            flex: 1;
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .camera-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            position: relative;
+        }
+        #video {
+            width: 100%;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        #canvas {
+            display: none;
+        }
+        .preview-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #face-preview {
+            max-width: 200px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            display: none;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 20px;
+        }
+        .controls button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        .controls button:hover {
+            background-color: #45a049;
+        }
+        .controls button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Student Registration with Face Recognition</h1>
+        
+        <form id="registration-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="name">Full Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="roll-number">Roll Number:</label>
+                    <input type="text" id="roll-number" name="roll_number" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email">
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone:</label>
+                    <input type="text" id="phone" name="phone">
+                </div>
+            </div>
+            
+            <h2>Face Registration</h2>
+            <p>Please look directly at the camera and ensure your face is clearly visible.</p>
+            
+            <div class="camera-container">
+                <video id="video" autoplay></video>
+                <canvas id="canvas"></canvas>
+            </div>
+            
+            <div class="preview-container">
+                <h3>Face Preview</h3>
+                <img id="face-preview" alt="Face Preview">
+            </div>
+            
+            <div class="controls">
+                <button type="button" id="start-camera">Start Camera</button>
+                <button type="button" id="capture-face" disabled>Capture Face</button>
+                <button type="button" id="retake" disabled>Retake</button>
+                <button type="submit" id="register" disabled>Register Student</button>
+            </div>
+        </form>
+        
+        <div id="message" class="message" style="display: none;"></div>
+    </div>
+
+    <script>
+        // DOM elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const facePreview = document.getElementById('face-preview');
+        const startCameraBtn = document.getElementById('start-camera');
+        const captureFaceBtn = document.getElementById('capture-face');
+        const retakeBtn = document.getElementById('retake');
+        const registerBtn = document.getElementById('register');
+        const registrationForm = document.getElementById('registration-form');
+        const messageDiv = document.getElementById('message');
+        
+        // Global variables
+        let stream = null;
+        let faceImageBlob = null;
+        
+        // Start camera
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    } 
+                });
+                video.srcObject = stream;
+                
+                startCameraBtn.disabled = true;
+                captureFaceBtn.disabled = false;
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                showMessage('Error accessing camera. Please make sure your camera is connected and you have granted permission.', 'error');
+            }
+        });
+        
+        // Capture face
+        captureFaceBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Display preview
+            facePreview.src = canvas.toDataURL('image/jpeg');
+            facePreview.style.display = 'inline-block';
+            
+            // Convert to blob for upload
+            canvas.toBlob((blob) => {
+                faceImageBlob = blob;
+            }, 'image/jpeg', 0.9);
+            
+            // Update button states
+            captureFaceBtn.disabled = true;
+            retakeBtn.disabled = false;
+            registerBtn.disabled = false;
+        });
+        
+        // Retake photo
+        retakeBtn.addEventListener('click', () => {
+            facePreview.style.display = 'none';
+            faceImageBlob = null;
+            
+            captureFaceBtn.disabled = false;
+            retakeBtn.disabled = true;
+            registerBtn.disabled = true;
+        });
+        
+        // Register student
+        registrationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!faceImageBlob) {
+                showMessage('Please capture your face before registering.', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('name').value);
+            formData.append('roll_number', document.getElementById('roll-number').value);
+            formData.append('email', document.getElementById('email').value);
+            formData.append('phone', document.getElementById('phone').value);
+            formData.append('face_image', faceImageBlob, 'face.jpg');
+            
+            try {
+                const response = await fetch('/api/students/register', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('Student registered successfully!', 'success');
+                    registrationForm.reset();
+                    facePreview.style.display = 'none';
+                    
+                    // Stop camera
+                    if (stream) {
+                        stream.getTracks().forEach(track => track.stop());
+                        video.srcObject = null;
+                    }
+                    
+                    // Reset button states
+                    startCameraBtn.disabled = false;
+                    captureFaceBtn.disabled = true;
+                    retakeBtn.disabled = true;
+                    registerBtn.disabled = true;
+                } else {
+                    showMessage(data.message || 'Error registering student.', 'error');
+                }
+            } catch (error) {
+                console.error('Error registering student:', error);
+                showMessage('Error communicating with server.', 'error');
+            }
+        });
+        
+        // Helper function to show messages
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            // Scroll to message
+            messageDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

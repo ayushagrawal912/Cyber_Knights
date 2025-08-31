@@ -1,0 +1,11 @@
+flask==2.0.1
+werkzeug==2.0.1
+flask-cors==3.0.10
+opencv-python-headless==4.7.0.72
+# Replacing face-recognition with alternative packages
+opencv-contrib-python-headless==4.7.0.72
+scikit-learn==1.2.2
+numpy==1.24.3
+pillow==9.5.0
+flask-sqlalchemy==2.5.1
+python-dotenv==0.19.1

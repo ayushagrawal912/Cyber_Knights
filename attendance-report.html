@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Report</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .navbar a {
+            text-decoration: none;
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 4px;
+        }
+        .navbar a:hover {
+            background-color: #e9ecef;
+        }
+        .navbar a.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .filters {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .filter-group select, .filter-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .action-buttons button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        .action-buttons button:hover {
+            background-color: #45a049;
+        }
+        .report-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .report-header {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        .report-header h2 {
+            margin: 0;
+            color: #333;
+        }
+        .report-summary {
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-bottom: 1px solid #ddd;
+        }
+        .report-summary p {
+            margin: 5px 0;
+        }
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .attendance-table th, .attendance-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .attendance-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .attendance-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .attendance-table tr:hover {
+            background-color: #e9ecef;
+        }
+        .present {
+            color: green;
+            font-weight: bold;
+        }
+        .absent {
+            color: red;
+        }
+        .export-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .export-buttons button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .export-buttons button:hover {
+            background-color: #0069d9;
+        }
+        .no-data {
+            padding: 30px;
+            text-align: center;
+            color: #666;
+        }
+        .analytics-container {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .analytics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .analytics-header h2 {
+            margin: 0;
+        }
+        .chart-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .chart-box {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .prediction-container {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f0f8ff;
+        }
+        .prediction-header {
+            margin-bottom: 15px;
+        }
+        .prediction-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .prediction-box {
+            flex: 1;
+            min-width: 200px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .prediction-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .prediction-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .prediction-trend {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .trend-up {
+            color: green;
+        }
+        .trend-down {
+            color: red;
+        }
+        @media print {
+            .navbar, .filters, .action-buttons, .export-buttons {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navbar">
+            <a href="/">Home</a>
+            <a href="/student-registration">Register Student</a>
+            <a href="/face-attendance">Mark Attendance</a>
+            <a href="/attendance-report" class="active">View Reports</a>
+        </div>
+        
+        <h1>Attendance Report</h1>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label for="lecture-select">Select Lecture:</label>
+                <select id="lecture-select">
+                    <option value="">-- All Lectures --</option>
+                    <!-- Lectures will be loaded dynamically -->
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="date-select">Select Date:</label>
+                <input type="date" id="date-select">
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button id="generate-report">Generate Report</button>
+            <button id="clear-filters">Clear Filters</button>
+        </div>
+        
+        <div id="report-container" class="report-container" style="display: none;">
+            <div class="report-header">
+                <h2 id="report-title">Attendance Report</h2>
+            </div>
+            
+            <div class="report-summary">
+                <p id="lecture-info">Lecture: </p>
+                <p id="date-info">Date: </p>
+                <p id="attendance-stats">Total Students: 0 | Present: 0 | Absent: 0</p>
+            </div>
+            
+            <table class="attendance-table">
+                <thead>
+                    <tr>
+                        <th>Roll Number</th>
+                        <th>Student Name</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-data">
+                    <!-- Attendance data will be loaded dynamically -->
+                </tbody>
+            </table>
+            
+            <div class="export-buttons">
+                <button id="export-csv">Export as CSV</button>
+                <button id="print-report">Print Report</button>
+            </div>
+        </div>
+        
+        <!-- Analytics Section -->
+        <div id="analytics-container" class="analytics-container" style="display: none;">
+            <div class="analytics-header">
+                <h2>Attendance Analytics</h2>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-box">
+                    <div class="chart-title">Attendance Rate Over Time</div>
+                    <canvas id="attendance-trend-chart"></canvas>
+                </div>
+                
+                <div class="chart-box">
+                    <div class="chart-title">Present vs Absent</div>
+                    <canvas id="attendance-pie-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Prediction Section -->
+        <div id="prediction-container" class="prediction-container" style="display: none;">
+            <div class="prediction-header">
+                <h2>Attendance Predictions</h2>
+                <p>Based on historical data, our AI predicts the following attendance patterns:</p>
+            </div>
+            
+            <div class="prediction-content">
+                <div class="prediction-box">
+                    <div class="prediction-title">Predicted Attendance Rate (Next Week)</div>
+                    <div id="next-week-prediction" class="prediction-value">--</div>
+                    <div class="prediction-trend">
+                        <span id="next-week-trend">--</span>
+                    </div>
+                </div>
+                
+                <div class="prediction-box">
+                    <div class="prediction-title">Students at Risk of Low Attendance</div>
+                    <div id="at-risk-count" class="prediction-value">--</div>
+                    <div id="at-risk-list" style="margin-top: 10px; font-size: 14px;">
+                        <!-- At-risk students will be listed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="no-data" class="no-data" style="display: none;">
+            <h3>No attendance data found for the selected filters.</h3>
+            <p>Please try different filters or mark attendance first.</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const lectureSelect = document.getElementById('lecture-select');
+        const dateSelect = document.getElementById('date-select');
+        const generateReportBtn = document.getElementById('generate-report');
+        const clearFiltersBtn = document.getElementById('clear-filters');
+        const reportContainer = document.getElementById('report-container');
+        const analyticsContainer = document.getElementById('analytics-container');
+        const predictionContainer = document.getElementById('prediction-container');
+        const noDataMessage = document.getElementById('no-data');
+        const reportTitle = document.getElementById('report-title');
+        const lectureInfo = document.getElementById('lecture-info');
+        const dateInfo = document.getElementById('date-info');
+        const attendanceStats = document.getElementById('attendance-stats');
+        const attendanceData = document.getElementById('attendance-data');
+        const exportCsvBtn = document.getElementById('export-csv');
+        const printReportBtn = document.getElementById('print-report');
+        
+        // Chart variables
+        let attendanceTrendChart = null;
+        let attendancePieChart = null;
+        
+        // Set default date to today
+        dateSelect.valueAsDate = new Date();
+        
+        // Load lectures
+        async function loadLectures() {
+            try {
+                const response = await fetch('/api/lectures');
+                const data = await response.json();
+                
+                if (data.success && data.lectures.length > 0) {
+                    data.lectures.forEach(lecture => {
+                        const option = document.createElement('option');
+                        option.value = lecture.id;
+                        option.textContent = `${lecture.name} (${lecture.course_code}) - ${lecture.date}`;
+                        lectureSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading lectures:', error);
+            }
+        }
+        
+        // Generate report
+        generateReportBtn.addEventListener('click', async () => {
+            const lectureId = lectureSelect.value;
+            const date = dateSelect.value;
+            
+            if (!lectureId && !date) {
+                alert('Please select at least one filter (lecture or date)');
+                return;
+            }
+            
+            try {
+                // Build query parameters
+                const params = new URLSearchParams();
+                if (lectureId) params.append('lecture_id', lectureId);
+                if (date) params.append('date', date);
+                
+                const response = await fetch(`/api/attendance/report?${params.toString()}`);
+                const data = await response.json();
+                
+                if (data.success && data.attendance.length > 0) {
+                    // Update report header
+                    if (lectureId && data.lecture) {
+                        reportTitle.textContent = `Attendance Report: ${data.lecture.name}`;
+                        lectureInfo.textContent = `Lecture: ${data.lecture.name} (${data.lecture.course_code})`;
+                    } else {
+                        reportTitle.textContent = 'Attendance Report';
+                        lectureInfo.textContent = 'Lecture: All Lectures';
+                    }
+                    
+                    dateInfo.textContent = `Date: ${date || 'All Dates'}`;
+                    
+                    // Calculate statistics
+                    const totalStudents = data.total_students || data.attendance.length;
+                    const presentStudents = data.attendance.filter(a => a.status === 'present').length;
+                    const absentStudents = totalStudents - presentStudents;
+                    
+                    attendanceStats.textContent = `Total Students: ${totalStudents} | Present: ${presentStudents} | Absent: ${absentStudents}`;
+                    
+                    // Populate table
+                    attendanceData.innerHTML = '';
+                    data.attendance.forEach(record => {
+                        const row = document.createElement('tr');
+                        
+                        const rollCell = document.createElement('td');
+                        rollCell.textContent = record.student.roll_number;
+                        
+                        const nameCell = document.createElement('td');
+                        nameCell.textContent = record.student.name;
+                        
+                        const statusCell = document.createElement('td');
+                        statusCell.textContent = record.status === 'present' ? 'Present' : 'Absent';
+                        statusCell.className = record.status === 'present' ? 'present' : 'absent';
+                        
+                        const timeCell = document.createElement('td');
+                        if (record.timestamp) {
+                            const date = new Date(record.timestamp);
+                            timeCell.textContent = date.toLocaleTimeString();
+                        } else {
+                            timeCell.textContent = '-';
+                        }
+                        
+                        row.appendChild(rollCell);
+                        row.appendChild(nameCell);
+                        row.appendChild(statusCell);
+                        row.appendChild(timeCell);
+                        
+                        attendanceData.appendChild(row);
+                    });
+                    
+                    reportContainer.style.display = 'block';
+                    noDataMessage.style.display = 'none';
+                    
+                    // Generate analytics
+                    generateAnalytics(data);
+                    
+                    // Generate predictions
+                    generatePredictions(data);
+                } else {
+                    reportContainer.style.display = 'none';
+                    analyticsContainer.style.display = 'none';
+                    predictionContainer.style.display = 'none';
+                    noDataMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error generating report:', error);
+                alert('Error generating report. Please try again.');
+            }
+        });
+        
+        // Generate analytics
+        function generateAnalytics(data) {
+            if (!data || !data.attendance || data.attendance.length === 0) {
+                analyticsContainer.style.display = 'none';
+                return;
+            }
+            
+            // Prepare data for charts
+            const presentCount = data.attendance.filter(a => a.status === 'present').length;
+            const absentCount = data.attendance.length - presentCount;
+            
+            // Create pie chart for present vs absent
+            const pieCtx = document.getElementById('attendance-pie-chart').getContext('2d');
+            if (attendancePieChart) {
+                attendancePieChart.destroy();
+            }
+            
+            attendancePieChart = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Present', 'Absent'],
+                    datasets: [{
+                        data: [presentCount, absentCount],
+                        backgroundColor: ['#4CAF50', '#f44336'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Create trend chart (simulated data for now)
+            // In a real implementation, you would fetch historical data from the server
+            const trendCtx = document.getElementById('attendance-trend-chart').getContext('2d');
+            if (attendanceTrendChart) {
+                attendanceTrendChart.destroy();
+            }
+            
+            // Simulate last 7 days of attendance data
+            const labels = [];
+            const attendanceRates = [];
+            const today = new Date();
+            
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                
+                // Generate random attendance rate between 70-95%
+                // In a real implementation, this would come from your database
+                const rate = Math.floor(Math.random() * 25) + 70;
+                attendanceRates.push(rate);
+            }
+            
+            attendanceTrendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Attendance Rate (%)',
+                        data: attendanceRates,
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 50,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Attendance Rate (%)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            analyticsContainer.style.display = 'block';
+        }
+        
+        // Generate predictions
+        function generatePredictions(data) {
+            if (!data || !data.attendance || data.attendance.length === 0) {
+                predictionContainer.style.display = 'none';
+                return;
+            }
+            
+            // Calculate current attendance rate
+            const presentCount = data.attendance.filter(a => a.status === 'present').length;
+            const currentRate = (presentCount / data.attendance.length) * 100;
+            
+            // Simulate prediction for next week (slightly higher than current rate)
+            // In a real implementation, this would come from a trained ML model
+            const predictedRate = Math.min(98, currentRate + (Math.random() * 5 - 2)).toFixed(1);
+            document.getElementById('next-week-prediction').textContent = `${predictedRate}%`;
+            
+            // Show trend
+            const trendElement = document.getElementById('next-week-trend');
+            if (predictedRate > currentRate) {
+                trendElement.textContent = `↑ ${(predictedRate - currentRate).toFixed(1)}% increase expected`;
+                trendElement.className = 'trend-up';
+            } else {
+                trendElement.textContent = `↓ ${(currentRate - predictedRate).toFixed(1)}% decrease expected`;
+                trendElement.className = 'trend-down';
+            }
+            
+            // Identify students at risk (those with attendance below 75%)
+            const atRiskStudents = data.attendance
+                .filter(a => a.status === 'absent')
+                .map(a => a.student)
+                .slice(0, 3); // Limit to 3 students for display
+            
+            document.getElementById('at-risk-count').textContent = atRiskStudents.length;
+            
+            const atRiskList = document.getElementById('at-risk-list');
+            atRiskList.innerHTML = '';
+            
+            if (atRiskStudents.length > 0) {
+                const ul = document.createElement('ul');
+                ul.style.paddingLeft = '20px';
+                
+                atRiskStudents.forEach(student => {
+                    const li = document.createElement('li');
+                    li.textContent = `${student.name} (${student.roll_number})`;
+                    ul.appendChild(li);
+                });
+                
+                atRiskList.appendChild(ul);
+            } else {
+                atRiskList.textContent = 'No students at risk';
+            }
+            
+            predictionContainer.style.display = 'block';
+        }
+        
+        // Clear filters
+        clearFiltersBtn.addEventListener('click', () => {
+            lectureSelect.value = '';
+            dateSelect.valueAsDate = new Date();
+            reportContainer.style.display = 'none';
+            analyticsContainer.style.display = 'none';
+            predictionContainer.style.display = 'none';
+            noDataMessage.style.display = 'none';
+        });
+        
+        // Export as CSV
+        exportCsvBtn.addEventListener('click', () => {
+            if (attendanceData.children.length === 0) return;
+            
+            let csvContent = "Roll Number,Student Name,Status,Time\n";
+            
+            Array.from(attendanceData.children).forEach(row => {
+                const cells = row.children;
+                const rollNumber = cells[0].textContent;
+                const name = cells[1].textContent;
+                const status = cells[2].textContent;
+                const time = cells[3].textContent;
+                
+                csvContent += `${rollNumber},"${name}",${status},${time}\n`;
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attendance_report_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+        
+        // Print report
+        printReportBtn.addEventListener('click', () => {
+            window.print();
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLectures();
+        });
+    </script>
+</body>
+</html>

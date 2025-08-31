@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Attendance</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .navbar a {
+            text-decoration: none;
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 4px;
+        }
+        .navbar a:hover {
+            background-color: #e9ecef;
+        }
+        .navbar a.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .camera-container {
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            position: relative;
+        }
+        #video {
+            width: 100%;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        #canvas {
+            display: none;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 20px;
+        }
+        .controls button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        .controls button:hover {
+            background-color: #45a049;
+        }
+        .controls button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result-container {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .recognized-students {
+            margin-top: 20px;
+        }
+        .recognized-students ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .recognized-students li {
+            padding: 8px;
+            margin-bottom: 5px;
+            background-color: #e9f7ef;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+        .lecture-select {
+            margin-bottom: 20px;
+            padding: 10px;
+            width: 100%;
+            max-width: 300px;
+        }
+        .face-preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #captured-image {
+            max-width: 320px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            display: none;
+            margin: 0 auto;
+        }
+        .attendance-summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            border-left: 5px solid #4CAF50;
+        }
+        .attendance-summary h3 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navbar">
+            <a href="/">Home</a>
+            <a href="/student-registration">Register Student</a>
+            <a href="/face-attendance" class="active">Mark Attendance</a>
+            <a href="/attendance-report">View Reports</a>
+        </div>
+        
+        <h1>Face Recognition Attendance</h1>
+        
+        <div class="form-group">
+            <label for="lecture-select">Select Lecture:</label>
+            <select id="lecture-select" class="lecture-select">
+                <option value="">-- Select a Lecture --</option>
+                <!-- Lectures will be loaded dynamically -->
+            </select>
+        </div>
+        
+        <div class="camera-container">
+            <video id="video" autoplay></video>
+            <canvas id="canvas"></canvas>
+        </div>
+        
+        <div class="face-preview">
+            <h3>Captured Image</h3>
+            <img id="captured-image" alt="Captured Image">
+        </div>
+        
+        <div class="controls">
+            <button id="start-camera">Start Camera</button>
+            <button id="capture" disabled>Capture Image</button>
+            <button id="mark-attendance" disabled>Mark Attendance</button>
+            <button id="stop-camera" disabled>Stop Camera</button>
+        </div>
+        
+        <div id="result-container" class="result-container" style="display: none;">
+            <h2>Attendance Results</h2>
+            <p id="message"></p>
+            <div class="recognized-students">
+                <h3>Recognized Students:</h3>
+                <ul id="recognized-list"></ul>
+            </div>
+            
+            <div class="attendance-summary">
+                <h3>Attendance Summary</h3>
+                <p id="summary-text">No attendance marked yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const capturedImage = document.getElementById('captured-image');
+        const startCameraBtn = document.getElementById('start-camera');
+        const captureBtn = document.getElementById('capture');
+        const markAttendanceBtn = document.getElementById('mark-attendance');
+        const stopCameraBtn = document.getElementById('stop-camera');
+        const resultContainer = document.getElementById('result-container');
+        const messageElement = document.getElementById('message');
+        const recognizedList = document.getElementById('recognized-list');
+        const lectureSelect = document.getElementById('lecture-select');
+        const summaryText = document.getElementById('summary-text');
+        
+        // Global variables
+        let stream = null;
+        let imageBlob = null;
+        
+        // Load lectures
+        async function loadLectures() {
+            try {
+                const response = await fetch('/api/lectures');
+                const data = await response.json();
+                
+                if (data.success) {
+                    data.lectures.forEach(lecture => {
+                        const option = document.createElement('option');
+                        option.value = lecture.id;
+                        option.textContent = `${lecture.name} (${lecture.course_code}) - ${lecture.date}`;
+                        lectureSelect.appendChild(option);
+                    });
+                } else {
+                    // If no lectures found, create a default one for testing
+                    createDefaultLecture();
+                }
+            } catch (error) {
+                console.error('Error loading lectures:', error);
+                // Create a default lecture for testing
+                createDefaultLecture();
+            }
+        }
+        
+        // Create a default lecture for testing
+        async function createDefaultLecture() {
+            try {
+                const response = await fetch('/api/lectures', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: 'Default Lecture',
+                        course_code: 'CS101',
+                        date: new Date().toISOString().split('T')[0]
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const option = document.createElement('option');
+                    option.value = data.lecture.id;
+                    option.textContent = `${data.lecture.name} (${data.lecture.course_code}) - ${data.lecture.date}`;
+                    lectureSelect.appendChild(option);
+                }
+            } catch (error) {
+                console.error('Error creating default lecture:', error);
+            }
+        }
+        
+        // Start camera
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    } 
+                });
+                video.srcObject = stream;
+                
+                startCameraBtn.disabled = true;
+                captureBtn.disabled = false;
+                stopCameraBtn.disabled = false;
+                markAttendanceBtn.disabled = true;
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                messageElement.textContent = 'Error accessing camera. Please make sure your camera is connected and you have granted permission.';
+                messageElement.className = 'error';
+                resultContainer.style.display = 'block';
+            }
+        });
+        
+        // Stop camera
+        stopCameraBtn.addEventListener('click', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                
+                startCameraBtn.disabled = false;
+                captureBtn.disabled = true;
+                stopCameraBtn.disabled = true;
+            }
+        });
+        
+        // Capture image
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Display captured image
+            capturedImage.src = canvas.toDataURL('image/jpeg');
+            capturedImage.style.display = 'block';
+            
+            // Convert canvas to blob for upload
+            canvas.toBlob((blob) => {
+                imageBlob = blob;
+                markAttendanceBtn.disabled = false;
+            }, 'image/jpeg', 0.9);
+        });
+        
+        // Mark attendance
+        markAttendanceBtn.addEventListener('click', async () => {
+            const lectureId = lectureSelect.value;
+            
+            if (!lectureId) {
+                messageElement.textContent = 'Please select a lecture first.';
+                messageElement.className = 'error';
+                resultContainer.style.display = 'block';
+                return;
+            }
+            
+            if (!imageBlob) {
+                messageElement.textContent = 'Please capture an image first.';
+                messageElement.className = 'error';
+                resultContainer.style.display = 'block';
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('image', imageBlob, 'capture.jpg');
+            formData.append('lecture_id', lectureId);
+            
+            try {
+                // Send to server
+                const response = await fetch('/api/attendance/face-recognition', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    messageElement.textContent = data.message;
+                    messageElement.className = 'success';
+                    
+                    // Display recognized students
+                    recognizedList.innerHTML = '';
+                    if (data.recognized_students.length > 0) {
+                        data.recognized_students.forEach(student => {
+                            const li = document.createElement('li');
+                            li.textContent = `${student.name} (${student.roll_number})`;
+                            recognizedList.appendChild(li);
+                        });
+                        
+                        // Update summary
+                        summaryText.textContent = `Successfully marked attendance for ${data.recognized_students.length} student(s) in ${lectureSelect.options[lectureSelect.selectedIndex].text}`;
+                    } else {
+                        const li = document.createElement('li');
+                        li.textContent = 'No students recognized';
+                        recognizedList.appendChild(li);
+                        
+                        // Update summary
+                        summaryText.textContent = 'No students were recognized in the image. Please try again with a clearer image.';
+                    }
+                } else {
+                    messageElement.textContent = data.message || 'Error marking attendance';
+                    messageElement.className = 'error';
+                }
+                
+                resultContainer.style.display = 'block';
+            } catch (error) {
+                console.error('Error marking attendance:', error);
+                messageElement.textContent = 'Error communicating with server';
+                messageElement.className = 'error';
+                resultContainer.style.display = 'block';
+            }
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLectures();
+        });
+    </script>
+</body>
+</html>

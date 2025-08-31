@@ -1,0 +1,71 @@
+/* Custom reusable styles */
+.nav-btn {
+  @apply w-full text-left py-3 px-4 rounded-lg bg-white/0 hover:bg-white/20;
+}
+.select-box {
+  @apply flex items-center gap-2 bg-gray-100 p-2 rounded-md text-sm;
+}
+.select-box label {
+  @apply text-xs text-gray-600;
+}
+/* Sidebar navigation buttons */
+.nav-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: color 0.3s ease, background-color 0.3s ease;
+  color: white; /* default */
+}
+
+.nav-btn:hover {
+  color: #facc15; /* yellow-400 */
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Sidebar links (email, call us) */
+aside a {
+  display: block;
+  width: 100%;
+  text-align: center;
+  border-radius: 0.75rem;
+  transition: color 0.3s ease, background-color 0.3s ease;
+  color: white;
+}
+
+aside a:hover {
+  color: #facc15; /* yellow-400 */
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+#teacherMenu .nav-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  text-align: left;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#teacherMenu .nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #facc15; /* yellow-400 */
+}
+/* Sidebar hidden state for mobile */
+aside {
+  transition: transform 0.3s ease;
+}
+@media (max-width: 768px) {
+  aside {
+    transform: translateX(0);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+  }
+  aside.-translate-x-full {
+    transform: translateX(-100%);
+  }
+}
